@@ -1,4 +1,5 @@
 import random
+from gene_pool import gene_pool
 
 
 class Evolve(object):
@@ -100,7 +101,7 @@ class Evolve(object):
         If no allele from a parent "fits" the child, then use an allele from the 'gene_pool'
 
         Args:
-            parents (Evolvable): sequence of `Evolvable`s
+            children (Evolvable): sequence of `Evolvable`s
 
         Note:
             If no alleles from the `gene_pool` are used then we call `mutate()`on the child.
@@ -108,23 +109,22 @@ class Evolve(object):
         Returns:
             Evolvable created by combining the parents and inserting a random mutation from the `gene_pool`.
         """
-        child = self.evolvable_class(self.gene_pool.keys())
 
         while True:
-            mutated = False
+            gene_range = random.random(2)
+            parents_genes = [parent.genes[gene_range[0]:gene_range[1]] for parent in parents]
+            parents_remaining_genes = [parent.genes.get_genes_outside_range(gene_range[0],gene_range[1])
+                                       for parent in parents]
+            chosen_parent_index = random.randint(2)
 
-            for gene in self.gene_pool.keys():
-                random_parent = random.choice(parents)
-                random_allele = random_parent.genes[gene]
+            chosen_parent_genes = parents_genes[chosen_parent_index]
+            discarded_parent_genes = parents_remaining_genes[1-chosen_parent_index]
 
-                while True:
-                    if random_allele not in child.genes.values():
-                        child.genes[gene] = random_allele
-                        break
-                    mutated = True
-                    random_allele = random.choice(self.gene_pool[gene])
-            if not mutated:
-                self.mutate(child)
+            new_genes = chosen_parent_genes[0]+discarded_parent_genes[0],\
+                        chosen_parent_genes[1]+discarded_parent_genes[1]
+
+            child = self.evolvable_class(*new_genes)
+            self.mutate(child)
 
             if child.can_survive():
                 child.cache_attrs = True
